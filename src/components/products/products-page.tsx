@@ -7,7 +7,10 @@ import { CalendarDays, FilterX, Search } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import dynamic from "next/dynamic";
 
-import { ProductsChart } from "@/components/products/products-chart";
+const LazyChart = dynamic(
+  () => import("@/components/products/products-chart").then((mod) => mod.ProductsChart),
+  { ssr: false }
+);
 import { ProductCard } from "@/components/products/product-card";
 import { FavoritesPanel } from "@/components/products/favorites-panel";
 import { Button } from "@/components/ui/button";
@@ -30,7 +33,14 @@ import type { Product } from "@/lib/types";
 const ITEMS_PER_PAGE = 10;
 const LazyCalendar = dynamic(
   () => import("@/components/ui/calendar").then((mod) => mod.Calendar),
-  { ssr: false }
+  {
+    ssr: false,
+    loading: () => (
+      <div className="flex h-[280px] items-center justify-center text-sm text-muted-foreground">
+        Loading calendar…
+      </div>
+    )
+  }
 );
 
 type ProductsPageProps = {
@@ -51,8 +61,12 @@ export function ProductsPage({ initialProducts, initialCategories }: ProductsPag
   const [page, setPage] = useState(1);
   const [initialized, setInitialized] = useState(false);
   const [calendarOpen, setCalendarOpen] = useState(false);
+  const [monthsToShow, setMonthsToShow] = useState(6);
   const debouncedSearch = useDebounce(search, 350);
   const lastQueryRef = useRef<string | null>(null);
+  const searchCardRef = useRef<HTMLDivElement | null>(null);
+  const [sidebarTop, setSidebarTop] = useState(140);
+  const currentYear = new Date().getFullYear();
 
   useEffect(() => {
     if (initialized) return;
@@ -101,19 +115,31 @@ export function ProductsPage({ initialProducts, initialCategories }: ProductsPag
 
   const filteredProducts = useMemo(() => {
     const normalizedSearch = debouncedSearch.trim().toLowerCase();
-    return products.filter((product) => {
+    const filtered = products.filter((product) => {
       const matchesSearch = normalizedSearch
         ? product.title.toLowerCase().includes(normalizedSearch)
         : true;
       const matchesCategory = category === "all" ? true : product.category === category;
       const matchesDateRange = (() => {
-        if (!dateRange?.from || !dateRange?.to) return true;
+        if (!dateRange?.from && !dateRange?.to) return true;
         const date = parseISO(product.dateAdded);
-        return date >= dateRange.from && date <= dateRange.to;
+        if (dateRange.from && dateRange.to) {
+          return date >= dateRange.from && date <= dateRange.to;
+        }
+        if (dateRange.from) {
+          const endOfDay = new Date(dateRange.from);
+          endOfDay.setHours(23, 59, 59, 999);
+          return date >= dateRange.from && date <= endOfDay;
+        }
+        return true;
       })();
 
       return matchesSearch && matchesCategory && matchesDateRange;
     });
+
+    return filtered.sort(
+      (a, b) => parseISO(b.dateAdded).getTime() - parseISO(a.dateAdded).getTime()
+    );
   }, [products, debouncedSearch, category, dateRange]);
 
   const totalPages = Math.max(1, Math.ceil(filteredProducts.length / ITEMS_PER_PAGE));
@@ -129,6 +155,31 @@ export function ProductsPage({ initialProducts, initialCategories }: ProductsPag
       : format(dateRange.from, "MMM d, yyyy")
     : "Select range";
 
+  useEffect(() => {
+    let frame = 0;
+    const updateTop = () => {
+      if (!searchCardRef.current) return;
+      const rect = searchCardRef.current.getBoundingClientRect();
+      setSidebarTop(Math.max(100, rect.top));
+    };
+    const schedule = () => {
+      if (frame) return;
+      frame = window.requestAnimationFrame(() => {
+        frame = 0;
+        updateTop();
+      });
+    };
+
+    schedule();
+    window.addEventListener("resize", schedule);
+    window.addEventListener("scroll", schedule, { passive: true });
+    return () => {
+      if (frame) cancelAnimationFrame(frame);
+      window.removeEventListener("resize", schedule);
+      window.removeEventListener("scroll", schedule);
+    };
+  }, []);
+
   return (
     <div className="space-y-8">
       <section className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
@@ -136,11 +187,25 @@ export function ProductsPage({ initialProducts, initialCategories }: ProductsPag
           <p className="text-sm font-semibold uppercase tracking-[0.35em] text-primary">
             Product Library
           </p>
-          <h1 className="mt-3 text-4xl font-semibold">Curate the newest arrivals</h1>
+          <h1 className="mt-3 text-3xl font-semibold md:text-4xl">
+            Curate the newest arrivals
+          </h1>
           <p className="mt-2 max-w-xl text-muted-foreground">
             Filter by category, search by name, or narrow by when a product joined the catalog.
           </p>
         </div>
+      </section>
+
+      {!error && products.length > 0 && (
+        <LazyChart
+          products={products}
+          monthsToShow={monthsToShow}
+          onMonthsToShowChange={setMonthsToShow}
+        />
+      )}
+
+      <div className="space-y-6 xl:hidden">
+        {!error && products.length > 0 && <FavoritesPanel products={products} />}
         <div className="flex flex-col gap-3 rounded-2xl border border-border/60 bg-card/70 p-4 shadow-sm">
           <p className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">
             Active filters
@@ -157,29 +222,27 @@ export function ProductsPage({ initialProducts, initialCategories }: ProductsPag
             </span>
           </div>
         </div>
-      </section>
+      </div>
 
-      {!error && products.length > 0 && <ProductsChart products={products} />}
-      {!error && products.length > 0 && <FavoritesPanel products={products} />}
-
-      <Card className="border-border/60 bg-card/80 shadow-md">
+      <Card className="border-border/60 bg-card/80 shadow-md" ref={searchCardRef}>
         <CardContent className="flex flex-col gap-4 p-6 lg:flex-row lg:items-center lg:justify-between">
           <div className="relative flex-1">
             <Search className="pointer-events-none absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
             <Input
               value={search}
-              onChange={(event) => setSearch(event.target.value)}
+              onChange={(event) => setSearch(event.target.value.slice(0, 20))}
               placeholder="Search products..."
               className="pl-9"
+              maxLength={20}
               aria-label="Search products"
             />
           </div>
           <div className="grid w-full gap-3 sm:grid-cols-2 lg:w-auto lg:grid-cols-3">
             <Select value={category} onValueChange={setCategory}>
-              <SelectTrigger className="min-w-[180px]">
+              <SelectTrigger className="min-w-[180px] w-full">
                 <SelectValue placeholder="Category" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="max-h-64 overflow-y-auto">
                 <SelectItem value="all">All categories</SelectItem>
                 {categories.map((item) => (
                   <SelectItem key={item.value} value={item.value}>
@@ -191,7 +254,7 @@ export function ProductsPage({ initialProducts, initialCategories }: ProductsPag
 
             <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
               <PopoverTrigger asChild>
-                <Button variant="outline" className="justify-start gap-2">
+                <Button variant="outline" className="w-full justify-start gap-2">
                   <CalendarDays className="h-4 w-4" />
                   <span className={cn(!dateRange?.from && "text-muted-foreground")}>
                     {dateLabel}
@@ -202,10 +265,14 @@ export function ProductsPage({ initialProducts, initialCategories }: ProductsPag
                 <div className="flex flex-col gap-3 p-4">
                   {calendarOpen && (
                     <LazyCalendar
+                      className="rounded-xl border border-border/60 bg-popover/95 backdrop-blur"
                       mode="range"
                       selected={dateRange}
                       onSelect={setDateRange}
                       numberOfMonths={1}
+                      captionLayout="dropdown"
+                      fromYear={currentYear - 1}
+                      toYear={currentYear}
                       onDayMouseEnter={(day) => setHoveredDate(day)}
                       onDayMouseLeave={() => setHoveredDate(null)}
                     />
@@ -320,6 +387,40 @@ export function ProductsPage({ initialProducts, initialCategories }: ProductsPag
           )}
         </section>
       )}
+
+      <div className="hidden xl:block">
+        <div
+          className="fixed left-6 flex w-[360px] max-h-[75vh] justify-center overflow-y-auto"
+          style={{ top: sidebarTop }}
+        >
+          <div className="w-80">
+            {!error && products.length > 0 && <FavoritesPanel products={products} />}
+          </div>
+        </div>
+        <div
+          className="fixed right-6 flex w-[320px] max-h-[75vh] justify-center overflow-y-auto"
+          style={{ top: sidebarTop }}
+        >
+          <div className="w-80">
+            <div className="flex flex-col gap-3 rounded-2xl border border-border/60 bg-card/70 p-4 shadow-sm">
+            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">
+              Active filters
+            </p>
+            <div className="flex flex-wrap items-center gap-2 text-sm">
+              <span className="rounded-full border border-border/70 bg-background px-3 py-1 transition-colors">
+                {category === "all" ? "All categories" : category}
+              </span>
+              <span className="rounded-full border border-border/70 bg-background px-3 py-1 transition-colors">
+                {debouncedSearch ? `Search: ${debouncedSearch}` : "No search"}
+              </span>
+              <span className="rounded-full border border-border/70 bg-background px-3 py-1 transition-colors">
+                {dateRange?.from ? dateLabel : "Any date"}
+              </span>
+            </div>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

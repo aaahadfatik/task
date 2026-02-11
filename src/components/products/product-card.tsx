@@ -56,7 +56,7 @@ export function ProductCard({ product }: { product: Product }) {
             {product.title}
           </Link>
         </CardTitle>
-        <p className="text-sm text-muted-foreground">{product.description}</p>
+        <p className="line-clamp-2 text-sm text-muted-foreground">{product.description}</p>
       </CardContent>
       <CardFooter className="flex items-center justify-between">
         <div>

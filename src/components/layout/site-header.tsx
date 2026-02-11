@@ -11,7 +11,7 @@ export function SiteHeader() {
   const { count, hydrated } = useFavorites();
 
   return (
-    <header className="border-b border-border/60 bg-background/70 backdrop-blur">
+    <header className="sticky top-0 z-50 border-b border-border/60 bg-background/70 backdrop-blur">
       <div className="container flex flex-col gap-4 py-6 md:flex-row md:items-center md:justify-between">
         <div className="flex items-center gap-4">
           <Link href="/" className="flex items-center gap-3">

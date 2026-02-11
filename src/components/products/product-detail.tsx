@@ -65,6 +65,7 @@ export function ProductDetail({ product }: { product: Product }) {
                 onClick={() => toggleFavorite(product.id)}
                 variant={favorite ? "default" : "outline"}
                 className="gap-2"
+                aria-pressed={favorite}
               >
                 <Heart className={cn("h-4 w-4", favorite && "fill-current")} />
                 {favorite ? "Favorited" : "Add to favorites"}
