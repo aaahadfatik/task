@@ -164,23 +164,7 @@ export function ProductsChart({
               >
                 {index % labelStep === 0 ? months[index].label : ""}
               </text>
-              <text
-                x={
-                  index === 0
-                    ? paddingX + 2
-                    : index === points.length - 1
-                      ? width - paddingX - 2
-                      : point.x
-                }
-                y={labelY}
-                textAnchor={
-                  index === 0 ? "start" : index === points.length - 1 ? "end" : "middle"
-                }
-                fontSize="11"
-                fill="currentColor"
-              >
-                {index % labelStep === 0 ? months[index].count : ""}
-              </text>
+              
             </g>
           ))}
         </svg>
