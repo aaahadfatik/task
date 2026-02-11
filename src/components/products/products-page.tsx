@@ -9,6 +9,7 @@ import dynamic from "next/dynamic";
 
 import { ProductsChart } from "@/components/products/products-chart";
 import { ProductCard } from "@/components/products/product-card";
+import { FavoritesPanel } from "@/components/products/favorites-panel";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -159,6 +160,7 @@ export function ProductsPage({ initialProducts, initialCategories }: ProductsPag
       </section>
 
       {!error && products.length > 0 && <ProductsChart products={products} />}
+      {!error && products.length > 0 && <FavoritesPanel products={products} />}
 
       <Card className="border-border/60 bg-card/80 shadow-md">
         <CardContent className="flex flex-col gap-4 p-6 lg:flex-row lg:items-center lg:justify-between">
