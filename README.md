@@ -54,3 +54,21 @@ The calendar uses shadcn/ui’s `Calendar` (react-day-picker) with customized st
 - `npm run build` – production build
 - `npm run start` – start production server
 - `npm run lint` – lint
+
+## Personal Touches
+
+- Distinct visual direction: soft indigo gradient background, branded header, refined typography.
+- Indigo accent system across buttons, badges, calendar selections, chart.
+- Catalog pulse chart with range selector (6 months / 1 year).
+- Polished interactions: image hover scale, subtle transitions, refined cards.
+- Active filters panel to make filters more transparent for users.
+- Favorites panel with quick access and scrolling.
+- Sticky header and overlay side panels for desktop.
+
+## Suggestions (Optional Enhancements)
+
+- Pagination edge case: requirement is 10 per page, kept. If allowed, 9 or 12 looks better for visual balance.
+- Progressive loading: add “load more” or infinite scroll to reduce clicks.
+- Server-component split: render cards server-side, keep only favorite button client-side for better performance.
+- Shareable state: persist favorites or view state in URL.
+- Optional analytics: add small KPI cards (total products, favorites count, avg rating)
