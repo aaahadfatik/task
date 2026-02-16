@@ -196,16 +196,7 @@ export function ProductsPage({ initialProducts, initialCategories }: ProductsPag
         </div>
       </section>
 
-      {!error && products.length > 0 && (
-        <LazyChart
-          products={products}
-          monthsToShow={monthsToShow}
-          onMonthsToShowChange={setMonthsToShow}
-        />
-      )}
-
-      <div className="space-y-6 min-[1850px]:hidden">
-        {!error && products.length > 0 && <FavoritesPanel products={products} />}
+      <div className="min-[1850px]:hidden md:sticky md:top-24 md:z-30">
         <div className="flex flex-col gap-3 rounded-2xl border border-border/60 bg-card/70 p-4 shadow-sm">
           <p className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">
             Active filters
@@ -222,6 +213,18 @@ export function ProductsPage({ initialProducts, initialCategories }: ProductsPag
             </span>
           </div>
         </div>
+      </div>
+
+      {!error && products.length > 0 && (
+        <LazyChart
+          products={products}
+          monthsToShow={monthsToShow}
+          onMonthsToShowChange={setMonthsToShow}
+        />
+      )}
+
+      <div className="space-y-6 min-[1850px]:hidden">
+        {!error && products.length > 0 && <FavoritesPanel products={products} />}
       </div>
 
       <Card className="border-border/60 bg-card/80 shadow-md" ref={searchCardRef}>
