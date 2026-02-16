@@ -204,7 +204,7 @@ export function ProductsPage({ initialProducts, initialCategories }: ProductsPag
         />
       )}
 
-      <div className="space-y-6 xl:hidden">
+      <div className="space-y-6 2xl:hidden">
         {!error && products.length > 0 && <FavoritesPanel products={products} />}
         <div className="flex flex-col gap-3 rounded-2xl border border-border/60 bg-card/70 p-4 shadow-sm">
           <p className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">
@@ -388,7 +388,7 @@ export function ProductsPage({ initialProducts, initialCategories }: ProductsPag
         </section>
       )}
 
-      <div className="hidden xl:block">
+      <div className="hidden 2xl:block">
         <div
           className="fixed left-6 flex w-[360px] max-h-[75vh] justify-center overflow-y-auto"
           style={{ top: sidebarTop }}
